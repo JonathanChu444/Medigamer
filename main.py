@@ -95,11 +95,14 @@ back_health = 6000
 neck_health = 6000
 
 left_wrist_health_percentage = 100
+left_wrist_health_percentage_o = 100
 right_wrist_health_percentage = 100
 back_health_percentage = 100
 neck_health_percentage = 100
 green_color = 255
 red_color = 0
+
+max_damage_counter = 3
 
 with mp_pose.Pose(min_detection_confidence=0.8, min_tracking_confidence=0.8) as pose:
     while cap.isOpened():
@@ -167,73 +170,86 @@ with mp_pose.Pose(min_detection_confidence=0.8, min_tracking_confidence=0.8) as 
             right_wrist_angle = calculate_angle(left_index, left_wrist, left_elbow)
             neck_angle = calculate_angle(hips, shoulders, face_nose)
 
-            if(back_angle < 70):
+            if(back_angle < 78):
                 back_damage_timer += 1/timeCount
                 back_health -= back_damage_timer
                 back_health_percentage = back_health / 6000
-                red_color = int(255 * (1 - left_wrist_health_percentage))
-                if (red_color >= 250):
-                    green_color = int(255 * left_wrist_health_percentage)
                 back_health_percentage = round(round(back_health_percentage, 4) * 100, 3)
                 if (back_health_percentage <= 0):
-                    engine.say("WARNING, SIT STRAIGHT")
+                    engine.say("WARNING, SIT UPRIGHT")
                     engine.runAndWait()
-                    back_health = 6000
-                    red_color = 0
-                    green_color = 255
+                    if (max_damage_counter == 0):
+                        back_health = 0
+                        back_health_percentage = 0
+                        engine.say("WARNING, GET UP AND STRETCH")
+                        engine.runAndWait()
+                    else:
+                        max_damage_counter -= 1
+                        back_health = 6000
 
-            if(neck_angle < 130):
+            if(neck_angle < 135):
                 neck_damage_timer += 1/timeCount
                 neck_health -= neck_damage_timer
                 neck_health_percentage = neck_health / 6000
-                red_color = int(255 * (1 - left_wrist_health_percentage))
-                if (red_color >= 250):
-                    green_color = int(255 * left_wrist_health_percentage)
                 neck_health_percentage = round(round(neck_health_percentage, 4) * 100, 3)
                 if (neck_health_percentage <= 0):
                     engine.say("WARNING, KEEP YOUR HEAD UP")
                     engine.runAndWait()
-                    neck_health = 6000
-                    red_color = 0
-                    green_color = 255
+                    if (max_damage_counter == 0):
+                        neck_health = 0
+                        neck_health_percentage = 0
+                        engine.say("WARNING, GET UP AND STRETCH")
+                        engine.runAndWait()
+                    else:
+                        max_damage_counter -= 1
+                        neck_health = 6000
 
-            if(right_wrist_angle < 130):
+            #Can be changed for right handed  or left handed use
+            if(right_wrist_angle < 135):
                 right_wrist_damage_timer += 1/timeCount
                 right_wrist_health = right_wrist_health-right_wrist_damage_timer
                 right_wrist_health_percentage = right_wrist_health / 6000
-                red_color = int(255 * (1 - left_wrist_health_percentage))
-                if (red_color >= 250):
-                    green_color = int(255 * left_wrist_health_percentage)
                 right_wrist_health_percentage = round(round(right_wrist_health_percentage, 4) * 100, 3)
                 if (right_wrist_health_percentage <= 0):
                     engine.say("WARNING, STRAIGHTEN OUT RIGHT WRIST")
                     engine.runAndWait()
-                    right_wrist_health = 6000
-                    red_color = 0
-                    green_color = 255
+                    if(max_damage_counter == 0):
+                        right_wrist_health = 0
+                        right_wrist_health_percentage = 0
+                        engine.say("WARNING, GET UP AND STRETCH")
+                        engine.runAndWait()
+                    else:
+                        max_damage_counter -= 1
+                        right_wrist_health = 6000
 
-            if(left_wrist_angle < 130):
+            if(left_wrist_angle < 135):
                 left_wrist_damage_timer += 1/timeCount
                 left_wrist_health = left_wrist_health-left_wrist_damage_timer
                 left_wrist_health_percentage = left_wrist_health / 6000
-                red_color = int(255*(1-left_wrist_health_percentage))
-                if(red_color >= 250):
-                    green_color = int(255*left_wrist_health_percentage)
                 left_wrist_health_percentage = round(round(left_wrist_health_percentage, 4) * 100, 3)
-                if (left_wrist_health_percentage <= 0):
+                if (left_wrist_health_percentage < 0):
                     engine.say("WARNING, STRAIGHTEN OUT LEFT WRIST")
                     engine.runAndWait()
-                    left_wrist_health = 6000
-                    red_color = 0
-                    green_color = 255
+                    if(max_damage_counter == 0):
+                        left_wrist_health = 0
+                        left_wrist_health_percentage = 0
+                        engine.say("WARNING, GET UP AND STRETCH")
+                        engine.runAndWait()
+                    else:
+                        max_damage_counter -= 1
+                        left_wrist_health = 6000
 
             overall_health_percentage = (left_wrist_health_percentage + right_wrist_health_percentage + neck_health_percentage + back_health_percentage)/4
             overall_health_percentage = overall_health_percentage/100
+            if (red_color < 220):
+                red_color = int(255 * (2 - (overall_health_percentage * 2)))
+            elif (red_color >= 220):
+                green_color = int(255 * (overall_health_percentage * 2))
             overall_health = 1280*overall_health_percentage
             overall_health = int(overall_health)
 
             cv2.rectangle(image, (0, 0), (overall_health, 50), (0, green_color, red_color), -1)
-            cv2.putText(image, 'OVERALL JOINT HEALTH', (15, 12),
+            cv2.putText(image, 'OVERALL JOINT HEALTH', (15, 28),
                         cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
             cv2.putText(image, str(left_wrist_health_percentage),
                         tuple(np.multiply(right_wrist, [1280, 720]).astype(int)), cv2.FONT_HERSHEY_DUPLEX, 1, (255, green_color, 0), 2, cv2.LINE_AA)
@@ -246,14 +262,13 @@ with mp_pose.Pose(min_detection_confidence=0.8, min_tracking_confidence=0.8) as 
             cv2.putText(image, str(neck_health_percentage),
                         tuple(np.multiply(midpoint_neck, [1280, 720]).astype(int)), cv2.FONT_HERSHEY_DUPLEX, 1,
                         (255, green_color, 0), 2, cv2.LINE_AA)
-#chicken
 
         except:
             pass
 
         mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                           mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
-                           mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
+                           mp_drawing.DrawingSpec(color=(0, green_color, red_color), thickness=2, circle_radius=2),
+                           mp_drawing.DrawingSpec(color=(0, green_color, red_color), thickness=2, circle_radius=2)
                            )
         cv2.imshow('Mediapipe Feed', image)
         if cv2.waitKey(10) & 0xFF == ord('q'):
